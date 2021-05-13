@@ -15,8 +15,10 @@ app = Flask(__name__)
 
 @app.route("/", methods=['POST'])
 async def getNative():
+    # Todo: take optional parameters for getnative arguments
     url = request.form['url']
     filename = os.path.basename(urlparse(url).path)
+    # Todo: take either image or URL to image
     # file = request.files['image']
     # filename = file.filename
     # img = Image.open(file.stream)
