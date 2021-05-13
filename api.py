@@ -77,6 +77,15 @@ async def getNative():
         "image": str(encoded_string)
         }
 
+    # Remove temp files
+    if os.path.exists(f"{getn.output_dir}/{getn.filename}.png"):
+        os.remove(f"{getn.output_dir}/{getn.filename}.png")
+        os.remove(f"{getn.output_dir}/{getn.filename}.txt")
+
+    if os.path.exists(f"./temp/{filename}"):
+        os.remove(f"./temp/{filename}")
+
+    # Send response
     return content, 200
 
 
