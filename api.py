@@ -5,7 +5,7 @@ import os
 from urllib.parse import urlparse
 from vapoursynth import core
 from pprint import pprint
-from flask import Flask, request
+from flask import Flask, request, abort
 
 core.add_cache = False
 imwri = getattr(core, "imwri", getattr(core, "imwrif", None))
@@ -48,17 +48,16 @@ async def getNative():
         filename = file.filename
         image = imwri.Read("./temp/" + filename, float_output=True)
     else:
-        raise BaseException("Bad request")
+        abort(400, 'Missing image or URL to image file')
 
     # Do error checking on parameters/image
     if os.path.splitext(filename)[1][1:] in lossy:
-        raise BaseException(f"Don't use lossy formats. Lossy formats are:\n{', '.join(lossy)}")
+        abort(400, f"Do not use lossy formats. Lossy formats are:\n{', '.join(lossy)}")
     
     # Use getnative to approximate native resolution
     try:
         best_value, _, getn = await getnative.app.getnative(largs, image, scaler=None)
     except BaseException as err:
-        print(err)
         raise err 
 
     gc.collect()
