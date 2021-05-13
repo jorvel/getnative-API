@@ -2,6 +2,7 @@ import getnative.app
 import aiohttp
 import gc
 import os
+import base64
 from urllib.parse import urlparse
 from vapoursynth import core
 from pprint import pprint
@@ -67,11 +68,14 @@ async def getNative():
     gc.collect()
 
     # Form output
-    content = ''.join([
-        f"Output:"
-        f"\n{getn.scaler}",
-        f"\n{best_value}",
-    ])
+    with open(f"{getn.output_dir}/{getn.filename}.png", "rb") as plot:
+        encoded_string = base64.b64encode(plot.read())
+
+    content = {
+        "scaler": str(getn.scaler), 
+        "resolution": str(best_value),
+        "image": str(encoded_string)
+        }
 
     return content, 200
 
