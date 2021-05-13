@@ -45,10 +45,15 @@ async def getNative():
         image = await get_image_as_videonode(url, './temp/', filename)
     elif file is not None:
         file.save('./temp/' + file.filename)
-        image = imwri.Read("./temp/" + file.filename, float_output=True)
+        filename = file.filename
+        image = imwri.Read("./temp/" + filename, float_output=True)
     else:
-        return "Bad Request"
+        raise BaseException("Bad request")
 
+    # Do error checking on parameters/image
+    if os.path.splitext(filename)[1][1:] in lossy:
+        raise BaseException(f"Don't use lossy formats. Lossy formats are:\n{', '.join(lossy)}")
+    
     # Use getnative to approximate native resolution
     try:
         best_value, _, getn = await getnative.app.getnative(largs, image, scaler=None)
