@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 from vapoursynth import core
 from pprint import pprint
 from flask import Flask, request
-from PIL import Image
 
 core.add_cache = False
 imwri = getattr(core, "imwri", getattr(core, "imwrif", None))
@@ -15,40 +14,51 @@ app = Flask(__name__)
 
 @app.route("/", methods=['POST'])
 async def getNative():
-    # Todo: take optional parameters for getnative arguments
-    url = request.form['url']
-    filename = os.path.basename(urlparse(url).path)
-    # Todo: take either image or URL to image
-    # file = request.files['image']
-    # filename = file.filename
-    # img = Image.open(file.stream)
+    # Get getnative args from form-data, or use defaults
+    url = request.form.get('url', None)
+    file = request.files.get('image', None)
+    minHeight = request.form.get('min-height', 500)
+    maxHeight = request.form.get('max-height', 1080)
+    aspectRatio = request.form.get('aspect-ratio', 0)
+    kernel = request.form.get('kernel', 'bicubic')
+    bicubicB = request.form.get('bicubic-b', '1/3')
+    bicubicC = request.form.get('bicubic-c', '1/3')
+    lanczosTaps = request.form.get('lanczos-taps', 3)
+    stepping = request.form.get('stepping', 1)
 
-    # Todo, probably put some error handling here
     largs = [
-        '--min-height', str(500),
-        '--max-height', str(1080),
-        '--aspect-ratio', str(0),
-        '--kernel', str('bicubic'),
-        '--bicubic-b', str('1/3'),
-        '--bicubic-c', str('1/3'),
-        '--lanczos-taps', str(3),
-        '--stepping', str(1),
+        '--min-height', str(minHeight),
+        '--max-height', str(maxHeight),
+        '--aspect-ratio', str(aspectRatio),
+        '--kernel', str(kernel),
+        '--bicubic-b', str(bicubicB),
+        '--bicubic-c', str(bicubicC),
+        '--lanczos-taps', str(lanczosTaps),
+        '--stepping', str(stepping),
         '--output-dir', str("./"),
         '--plot-format', 'png',
     ]
-    image = await get_image_as_videonode(url, './temp/', filename)
-    # image = imwri.Read(img, float_output=True)
 
+    # Verify that we have either image or a URL to one
+    if url is not None:
+        filename = os.path.basename(urlparse(url).path)
+        image = await get_image_as_videonode(url, './temp/', filename)
+    elif file is not None:
+        file.save('./temp/' + file.filename)
+        image = imwri.Read("./temp/" + file.filename, float_output=True)
+    else:
+        return "Bad Request"
+
+    # Use getnative to approximate native resolution
     try:
-        import time
-        start = time.time()
         best_value, _, getn = await getnative.app.getnative(largs, image, scaler=None)
-        print('Time taken: ' + time.time() - start)
     except BaseException as err:
         print(err)
         raise err 
 
     gc.collect()
+
+    # Form output
     content = ''.join([
         f"Output:"
         f"\n{getn.scaler}",
