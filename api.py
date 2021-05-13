@@ -5,7 +5,7 @@ import os
 from urllib.parse import urlparse
 from vapoursynth import core
 from pprint import pprint
-from flask import Flask, request, abort
+from flask import Flask, request, abort, Response
 
 core.add_cache = False
 imwri = getattr(core, "imwri", getattr(core, "imwrif", None))
@@ -46,19 +46,23 @@ async def getNative():
     elif file is not None:
         file.save('./temp/' + file.filename)
         filename = file.filename
-        image = imwri.Read("./temp/" + filename, float_output=True)
+        try:
+            image = imwri.Read("./temp/" + filename, float_output=True)
+        except BaseException as err:
+            abort(Response(err,500))
+            
     else:
-        abort(400, 'Missing image or URL to image file')
+        abort(Response('Missing image or URL',400))
 
     # Do error checking on parameters/image
     if os.path.splitext(filename)[1][1:] in lossy:
-        abort(400, f"Do not use lossy formats. Lossy formats are:\n{', '.join(lossy)}")
+        abort(Response(f"Do not use lossy formats. Lossy formats are: {', '.join(lossy)}",400))
     
     # Use getnative to approximate native resolution
     try:
         best_value, _, getn = await getnative.app.getnative(largs, image, scaler=None)
     except BaseException as err:
-        raise err 
+        abort(Response(err,500))
 
     gc.collect()
 
@@ -69,15 +73,19 @@ async def getNative():
         f"\n{best_value}",
     ])
 
-    return content
+    return content, 200
 
 
 async def get_image_as_videonode(img_url, path, filename):
     image = await get_file(img_url, path, filename)
     if image is None:
-        raise BaseException("Can't load image. Please try it again later.")
+        abort(Response("Can't load image. Please try it again later.",500))
+    try:
+        result = imwri.Read(image, float_output=True)
+    except BaseException as err:
+        abort(Response("Can't load image. Please try it again later.",500))
 
-    return imwri.Read(image, float_output=True)
+    return result 
 
 async def get_file(url, path, filename):
     async with aiohttp.ClientSession() as sess:
