@@ -19,7 +19,7 @@ async def getNative():
     url = request.form.get('url', None)
     file = request.files.get('image', None)
     minHeight = request.form.get('min-height', 500)
-    maxHeight = request.form.get('max-height', 1080)
+    maxHeight = request.form.get('max-height', 1000)
     aspectRatio = request.form.get('aspect-ratio', 0)
     kernel = request.form.get('kernel', 'bicubic')
     bicubicB = request.form.get('bicubic-b', '1/3')
@@ -72,7 +72,7 @@ async def getNative():
         encoded_string = base64.b64encode(plot.read())
 
     content = {
-        "scaler": str(getn.scaler), 
+        "kernel": str(getn.scaler), 
         "resolution": str(best_value),
         "image": str(encoded_string)
         }
