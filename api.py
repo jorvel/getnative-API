@@ -15,6 +15,7 @@ app = Flask(__name__)
 
 @app.route("/", methods=['POST'])
 async def getNative():
+    gc.collect()
     # Get getnative args from form-data, or use defaults
     url = request.form.get('url', None)
     file = request.files.get('image', None)
@@ -62,10 +63,10 @@ async def getNative():
     # Use getnative to approximate native resolution
     try:
         best_value, _, getn = await getnative.app.getnative(largs, image, scaler=None)
+        gc.collect()
     except BaseException as err:
         abort(Response(err,500))
 
-    gc.collect()
 
     # Form output
     with open(f"{getn.output_dir}/{getn.filename}.png", "rb") as plot:
@@ -85,6 +86,7 @@ async def getNative():
     if os.path.exists(f"./temp/{filename}"):
         os.remove(f"./temp/{filename}")
 
+    gc.collect()
     # Send response
     return content, 200
 
